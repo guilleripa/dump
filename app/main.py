@@ -46,7 +46,9 @@ def train_loop(dataloader, model, loss_fn, optimizer, epoch):
 
         total_acc += (predictions == label).sum().item()
         total_count += label.size(0)
-        total_f1_score += f1_score(label, predictions, average="macro")
+        total_f1_score += f1_score(
+            label.detach().cpu(), predictions.detach().cpu(), average="macro"
+        )
 
         if batch_num % log_interval == 0 and batch_num > 0:
             elapsed = time.time() - start_time
@@ -78,7 +80,9 @@ def evaluate(dataloader, model, criterion):
             total_loss += criterion(predicted_label, label)
 
             total_acc += (predicted_label == label).sum().item()
-            total_f1_score += f1_score(label, predicted_label, average="macro")
+            total_f1_score += f1_score(
+                label.detach().cpu(), predicted_label.detach().cpu(), average="macro"
+            )
             total_count += label.size(0)
 
     print(
