@@ -113,11 +113,11 @@ if __name__ == "__main__":
     # Instantiate model
     model = RNNModel(
         vocab_size=len(train_dataloader.dataset.vocab),
-        embedding_dim=2,
-        hidden_dim=2,
+        embedding_dim=8,
+        hidden_dim=8,
         output_dim=1,
         n_layers=1,
-        bidirectional=False,
+        bidirectional=True,
         dropout=0,
     )
 
@@ -153,4 +153,4 @@ if __name__ == "__main__":
     toc = time.time()
     print("Done!", f"Training time: {toc - tic:>.3f} seconds")
     # Train model
-    train_loop(train_dataloader, test_dataloader, model)
+    train_loop(train_dataloader, model, loss_fn, optimizer, epochs + 1)
