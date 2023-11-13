@@ -8,7 +8,7 @@ import torch
 from sklearn.metrics import f1_score
 from torch import nn
 
-from app.dataset import device, get_dataloader
+from app.dataset import device, get_dataloaders
 from app.model import RNNModel
 
 CURRENT_DIR = Path(__file__).parent
@@ -46,22 +46,22 @@ def train_loop(dataloader, model, loss_fn, optimizer, epoch):
 
         total_acc += (predictions == label).sum().item()
         total_count += label.size(0)
-        total_f1_score += f1_score(
-            label.detach().cpu(), predictions.detach().cpu(), average="macro"
-        )
+        # total_f1_score += f1_score(
+        #         label.detach().cpu(), predictions.detach().cpu(), average="macro"
+        #     )
 
         if batch_num % log_interval == 0 and batch_num > 0:
             elapsed = time.time() - start_time
             print(
                 "| epoch {:3d} | {:5d}/{:5d} batches "
                 "| accuracy {:8.3f}"
-                "| f1_score {:8.3f}"
+                # "| f1_score {:8.3f}"
                 "| ms/batch {:5.2f}".format(
                     epoch,
                     batch_num,
                     len(dataloader),
                     total_acc / total_count,
-                    total_f1_score / log_interval,
+                    # total_f1_score / log_interval,
                     elapsed * 1000 / log_interval,
                 )
             )
@@ -104,17 +104,20 @@ if __name__ == "__main__":
     test_data = test_data[test_data["question_text"].str.len() > 5]
 
     # Turn csv to dataloader
-    train_dataloader = get_dataloader(train_data, batch_size=BATCH_SIZE)
-    test_dataloader = get_dataloader(test_data, batch_size=BATCH_SIZE)
+    # train_dataloader = get_dataloader(train_data, batch_size=BATCH_SIZE)
+    # test_dataloader = get_dataloader(test_data, batch_size=BATCH_SIZE)
+    train_dataloader, test_dataloader = get_dataloaders(
+        train_data, test_data, batch_size=BATCH_SIZE
+    )
 
     # Instantiate model
     model = RNNModel(
         vocab_size=len(train_dataloader.dataset.vocab),
-        embedding_dim=8,
-        hidden_dim=8,
+        embedding_dim=2,
+        hidden_dim=2,
         output_dim=1,
-        n_layers=2,
-        bidirectional=True,
+        n_layers=1,
+        bidirectional=False,
         dropout=0,
     )
 
