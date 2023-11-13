@@ -14,7 +14,7 @@ from app.model import RNNModel
 CURRENT_DIR = Path(__file__).parent
 DATA_DIR = CURRENT_DIR.parent / "data"
 
-BATCH_SIZE = 16
+BATCH_SIZE = 128
 LEARNING_RATE = 1e-3
 
 
@@ -110,12 +110,12 @@ if __name__ == "__main__":
     # Instantiate model
     model = RNNModel(
         vocab_size=len(train_dataloader.dataset.vocab),
-        embedding_dim=100,
-        hidden_dim=256,
+        embedding_dim=8,
+        hidden_dim=8,
         output_dim=1,
         n_layers=2,
         bidirectional=True,
-        dropout=0.5,
+        dropout=0,
     )
 
     # Send model to device

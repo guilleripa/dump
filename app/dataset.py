@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
-device = torch.device("cpu")
+device = torch.device("mps")
 
 tokenizer = get_tokenizer("basic_english")
 
