@@ -41,16 +41,15 @@ class RNNModel(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, text, text_lengths):
-        # text: secuencias de índices
-        # text_lengths: longitud real de cada secuencia
         embedded = self.embedding(text)
+
         packed_embedded = nn.utils.rnn.pack_padded_sequence(
             embedded, text_lengths, batch_first=True
         )
-        packed_output, (hidden, cell) = self.rnn(packed_embedded)
-        output, output_lengths = nn.utils.rnn.pad_packed_sequence(
-            packed_output, batch_first=True
-        )
+        _, (hidden, _) = self.rnn(packed_embedded)
+        # output, output_lengths = nn.utils.rnn.pad_packed_sequence(
+        #     packed_output, batch_first=True
+        # )
         hidden = self.dropout(
             torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
             if self.bidirectional

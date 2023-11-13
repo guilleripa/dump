@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
-device = torch.device("mps" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 tokenizer = get_tokenizer("basic_english")
 
@@ -24,29 +24,56 @@ class CustomDataset:
         return len(self.data)
 
     def __getitem__(self, idx):
-        return self.data.iloc[idx].values
+        return self.data.iloc[idx]
+
+    @property
+    def vocab(self):
+        if not hasattr(self, "_vocab"):
+            vocab = build_vocab_from_iterator(
+                yield_tokens(self.data), specials=["<unk>"]
+            )
+            vocab.set_default_index(vocab["<unk>"])
+            self._vocab = vocab
+
+        return self._vocab
 
 
-def get_dataloader(data: pd.DataFrame) -> DataLoader:
-    vocab = build_vocab_from_iterator(yield_tokens(data), specials=["<unk>"])
-    vocab.set_default_index(vocab["<unk>"])
+def get_dataloader(data: pd.DataFrame, batch_size: int = 16) -> DataLoader:
+    dataset = CustomDataset(data)
+    vocab = dataset.vocab
 
     def text_pipeline(x):
         return vocab(tokenizer(x))
 
     def collate_batch(batch):
-        label_list, text_list, offsets = [], [], [0]
-
+        """Collate function to pad the text to the maximum length in a batch.
+        The batch is sorted in descending order of text length to minimize the
+        amount of padding needed.
+        """
+        label_list, text_list, lengths = [], [], []
         for _text, _label in batch:
             label_list.append(_label)
             processed_text = torch.tensor(text_pipeline(_text), dtype=torch.int64)
             text_list.append(processed_text)
-            offsets.append(processed_text.size(0))
+            if processed_text.size(0) == 0:
+                lengths.append(torch.tensor(1))
+                print("Empty text found!", _text, _label, processed_text)
+            else:
+                lengths.append(processed_text.size(0))
 
-        label_list = torch.tensor(label_list, dtype=torch.int64)
-        offsets = torch.tensor(offsets[:-1]).cumsum(dim=0)
-        text_list = torch.cat(text_list)
-        return label_list.to(device), text_list.to(device), offsets.to(device)
+        text_list = torch.nn.utils.rnn.pad_sequence(text_list, batch_first=True)
+        label_list = torch.tensor(label_list, dtype=torch.float32).reshape(-1, 1)
 
-    dataset = CustomDataset(data)
-    return DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=collate_batch)
+        # sort based on text lengths
+        lengths = torch.tensor(lengths)
+        _, perm_idx = lengths.sort(0, descending=True)
+
+        text_list = text_list[perm_idx]
+        label_list = label_list[perm_idx]
+        lengths = lengths[perm_idx]
+
+        return label_list.to(device), text_list.to(device), lengths
+
+    return DataLoader(
+        dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_batch
+    )
