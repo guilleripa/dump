@@ -19,7 +19,7 @@ LEARNING_RATE = 1e-3
 
 
 def train_loop(dataloader, model, loss_fn, optimizer, epoch):
-    total_acc, total_count = 0, 0
+    total_acc, total_count, total_f1_score = 0, 0, 0
     log_interval = 500
     start_time = time.time()
     # Set the model to training mode - important for batch normalization and dropout layers
@@ -43,22 +43,27 @@ def train_loop(dataloader, model, loss_fn, optimizer, epoch):
         optimizer.step()
 
         predictions = (predicted_label > 0.5).float()
+
         total_acc += (predictions == label).sum().item()
         total_count += label.size(0)
+        total_f1_score += f1_score(label, predictions, average="macro")
+
         if batch_num % log_interval == 0 and batch_num > 0:
             elapsed = time.time() - start_time
             print(
                 "| epoch {:3d} | {:5d}/{:5d} batches "
                 "| accuracy {:8.3f}"
+                "| f1_score {:8.3f}"
                 "| ms/batch {:5.2f}".format(
                     epoch,
                     batch_num,
                     len(dataloader),
                     total_acc / total_count,
+                    total_f1_score / log_interval,
                     elapsed * 1000 / log_interval,
                 )
             )
-            total_acc, total_count = 0, 0
+            total_acc, total_count, total_f1_score = 0, 0, 0
             start_time = time.time()
 
 
